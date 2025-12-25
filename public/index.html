@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הארנק הכיתתי</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            text-align: center; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .card { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 20px; 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2); 
+            max-width: 400px; 
+            width: 100%;
+        }
+        input, button { 
+            width: 100%; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 10px; 
+            border: 2px solid #e0e0e0; 
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: all 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: bold;
+            font-size: 18px;
+        }
+        button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        h1 { 
+            color: #333; 
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        #error {
+            color: #e74c3c;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+        .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">🎓</div>
+        <h1>הארנק הדיגיטלי</h1>
+        <p class="subtitle">ברוכים הבאים למערכת הפרסים</p>
+        
+        <input type="password" id="password" placeholder="הכנס את הסיסמה האישית שלך">
+        <button onclick="login()">כניסה</button>
+        <p id="error"></p>
+    </div>
+
+    <script>
+        // Focus על שדה הסיסמה
+        document.getElementById('password').focus();
+        
+        // אפשרות ללחוץ Enter להתחברות
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+
+        async function login() {
+            const password = document.getElementById('password').value.trim();
+            const errorElement = document.getElementById('error');
+
+            if (!password) {
+                errorElement.innerText = 'נא להזין סיסמה';
+                return;
+            }
+
+            errorElement.innerText = 'מתחבר...';
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+
+                const data = await res.json();
+                
+                if (data.success) {
+                    // שמירת פרטי המשתמש
+                    localStorage.clear(); // ניקוי נתונים ישנים
+                    
+                    if (data.role === 'superadmin') {
+                        // מנהל-על
+                        localStorage.setItem('userRole', 'superadmin');
+                        localStorage.setItem('userName', data.name);
+                        window.location.href = 'superadmin.html';
+                    } else if (data.role === 'teacher') {
+                        // מורה רגיל
+                        localStorage.setItem('userRole', 'teacher');
+                        localStorage.setItem('userName', data.name);
+                        localStorage.setItem('classId', data.classId);
+                        localStorage.setItem('className', data.className);
+                        window.location.href = 'admin.html';
+                    } else if (data.role === 'student') {
+                        // תלמיד
+                        localStorage.setItem('userRole', 'student');
+                        localStorage.setItem('studentId', data.studentId);
+                        localStorage.setItem('studentName', data.name);
+                        localStorage.setItem('classId', data.classId);
+                        localStorage.setItem('className', data.className);
+                        window.location.href = 'student.html';
+                    }
+                } else {
+                    errorElement.innerText = data.message || 'סיסמה שגויה';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorElement.innerText = 'שגיאה בהתחברות. נסה שוב.';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ניהול כיתות - מנהל על</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+        }
+        .header .user-info {
+            color: #666;
+            font-size: 16px;
+        }
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .classes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .class-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .class-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        .class-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .class-card p {
+            color: #666;
+            font-size: 14px;
+        }
+        .class-card .delete-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .class-card .delete-btn:hover {
+            background: #c0392b;
+        }
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>🎓 ניהול כיתות - מנהל על</h1>
+                <div class="user-info">שלום, <span id="userName"></span></div>
+            </div>
+            <button class="logout-btn" onclick="logout()">יציאה</button>
+        </div>
+
+        <div class="section">
+            <h2>יצירת כיתה חדשה</h2>
+            <div class="form-group">
+                <label>שם הכיתה</label>
+                <input type="text" id="className" placeholder="לדוגמה: כיתה ז'1">
+            </div>
+            <div class="form-group">
+                <label>תיאור (אופציונלי)</label>
+                <textarea id="classDescription" rows="3" placeholder="תיאור הכיתה..."></textarea>
+            </div>
+            <button class="btn" onclick="createClass()">יצירת כיתה</button>
+            <div id="createMessage"></div>
+        </div>
+
+        <div class="section">
+            <h2>כיתות קיימות</h2>
+            <div class="classes-grid" id="classesGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        // בדיקת הרשאות
+        if (localStorage.getItem('userRole') !== 'superadmin') {
+            alert('אין לך הרשאה לגשת לדף זה');
+            window.location.href = 'index.html';
+        }
+
+        // הצגת שם המשתמש
+        document.getElementById('userName').innerText = localStorage.getItem('userName') || 'מנהל';
+
+        // טעינת כיתות
+        async function loadClasses() {
+            try {
+                const res = await fetch('/api/classes');
+                const classes = await res.json();
+                
+                const grid = document.getElementById('classesGrid');
+                if (classes.length === 0) {
+                    grid.innerHTML = '<p style="text-align:center; color:#999;">אין כיתות במערכת</p>';
+                    return;
+                }
+
+                grid.innerHTML = classes.map(cls => `
+                    <div class="class-card" onclick="openClass('${cls._id}')">
+                        <button class="delete-btn" onclick="event.stopPropagation(); deleteClass('${cls._id}', '${cls.name}')">מחק</button>
+                        <h3>${cls.name}</h3>
+                        <p>${cls.description || 'אין תיאור'}</p>
+                        <p style="margin-top:10px; font-size:12px; color:#999;">
+                            נוצרה: ${new Date(cls.createdAt).toLocaleDateString('he-IL')}
+                        </p>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading classes:', error);
+            }
+        }
+
+        // יצירת כיתה
+        async function createClass() {
+            const name = document.getElementById('className').value.trim();
+            const description = document.getElementById('classDescription').value.trim();
+            const messageEl = document.getElementById('createMessage');
+
+            if (!name) {
+                showMessage(messageEl, 'נא להזין שם כיתה', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/classes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description })
+                });
+
+                const data = await res.json();
+                
+                if (data.success) {
+                    showMessage(messageEl, data.message, 'success');
+                    document.getElementById('className').value = '';
+                    document.getElementById('classDescription').value = '';
+                    loadClasses();
+                } else {
+                    showMessage(messageEl, data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error creating class:', error);
+                showMessage(messageEl, 'שגיאה ביצירת הכיתה', 'error');
+            }
+        }
+
+        // מחיקת כיתה
+        async function deleteClass(classId, className) {
+            if (!confirm(`האם אתה בטוח שברצונך למחוק את "${className}"?\n\nפעולה זו תמחק את כל התלמידים, המורים והמוצרים של הכיתה!`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/classes/${classId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await res.json();
+                
+                if (data.success) {
+                    alert(data.message);
+                    loadClasses();
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                console.error('Error deleting class:', error);
+                alert('שגיאה במחיקת הכיתה');
+            }
+        }
+
+        // פתיחת כיתה לניהול
+        function openClass(classId) {
+            localStorage.setItem('managedClassId', classId);
+            window.location.href = 'class-management.html';
+        }
+
+        // יציאה
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        // הצגת הודעה
+        function showMessage(element, message, type) {
+            element.innerHTML = `<div class="message ${type}">${message}</div>`;
+            setTimeout(() => {
+                element.innerHTML = '';
+            }, 3000);
+        }
+
+        // טעינה ראשונית
+        loadClasses();
+    </script>
+</body>
+</html>
